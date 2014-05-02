@@ -1,0 +1,161 @@
+<?php
+
+//No styling. Will work on that.
+
+class circle_game {
+    public function __construct() {
+        session_start();
+    }
+
+    public function play(){
+        return '<input type="button" value="Play" onclick="window.location = \'?play=circle_true\'">';
+    }
+
+    public function start($msg=null) {
+        unset($_SESSION['bees']);
+
+        $bee = new circle_bee();
+        $bee->setType('queen');
+        $this->addcircle_bee($bee,1);
+
+        $bee = new circle_bee();
+        $bee->setType('worker');
+        $this->addcircle_bee($bee,5);
+
+        $bee = new circle_bee();
+        $bee->setType('drone');
+        $this->addcircle_bee($bee,8);
+
+        if($msg) {
+            return $msg;
+        }
+        else {
+            var_dump($_SESSION['bees']); // debug
+            return ' <input type="button" value="Hit" onclick="window.location = \'?hit=circle_true\'"> <br><h1>Game started</h1>';
+        }
+    }
+
+    public function hit() {
+        $msg = '';
+
+        if ($_SESSION['bees']) {
+            $rd = array_rand($_SESSION['bees'],1);  
+        } 
+        else {
+            $this->start('Game will start again');
+        }
+
+        $_SESSION['bees'][$rd]['lifespan'] = $_SESSION['bees'][$rd]['lifespan'] - $_SESSION['bees'][$rd]['hit'];
+
+        if ($_SESSION['bees'][$rd]['lifespan']<1) {
+            $_SESSION['bees'][$rd]['bees'] -=1;
+            $_SESSION['bees'][$rd]['lifespan'] = $_SESSION['bees'][$rd]['life'];
+
+            switch($rd)
+            {
+                case 'queen':
+                $msg .= $this->start('<br><h1><b>The Queen is dead. All remaining alive bees have run out of hit points. The game has been reset.</b> </h1>');
+                break;
+
+                default:
+                $msg .= '<br><h1><b>One \'' . $rd . '\' is gone</h1></b>';
+            }
+        }
+
+        if ($_SESSION['bees'][$rd]['bees']<1) {
+            unset($_SESSION['bees'][$rd]);
+            $msg = '<br><h1><b>The \'' . $rd . '\' team is gone</h1></b>';
+        }
+
+        var_dump($_SESSION['bees']); // debug
+
+        return '<input type="button" value="Hit" onclick="window.location = \'?hit=1\'"> ' . $msg;
+    }
+
+    public function addcircle_bee(circle_bee $newbee, $number = 1) {
+
+        $tipo = $newbee->getType();
+        $bee = $newbee->get();
+
+        $_SESSION['bees'][$tipo] = $bee;
+        $_SESSION['bees'][$tipo]['bees'] = $number;
+        $_SESSION['bees'][$tipo]['life'] = $newbee->getLifespan($tipo);
+    }
+}
+
+
+class circle_bee {
+    protected $_type = null;
+
+    protected $_types = array(  'queen' => array(
+                                                'hit'   =>  8,
+                                                'lifespan' => 100
+                                                ),
+									
+                                'worker' => array(
+                                                'hit'   =>  10,
+                                                'lifespan' => 75
+                                                ),
+                                'drone' => array(
+                                                'hit'   =>  12,
+                                                'lifespan' => 50
+                                                ));
+
+    public function setHit(){}
+    public function setLifespan(){}
+    public function addNewType(){}
+
+    protected function _set_hit(){}
+    protected function _set_lifespan(){}
+    protected function _add_new_type(){}
+
+    public function getLifespan($type) {
+        if (array_key_exists($type,$this->_types)) {
+            return $this->_types[$this->_type]['lifespan'];
+        }
+        else {
+            throw new Exception('<br><h1><b>The Bee needs to be a Queen, Worker or Drone</h1></b>');
+        }
+    }
+
+    public function getTypes() {
+        return $this->_types;
+    }
+
+    public function getType() {
+        return $this->_type;
+    }
+
+    public function setType($type) {
+        if(array_key_exists($type,$this->_types)) {
+            $this->_type = $type;
+        }
+        else {
+            throw new Exception('<br><h1><b>The Bee needs to be a Queen, Worker or Drone</h1></b>');
+        }
+    }
+
+    public function get() {
+        return $this->_types[$this->_type];
+    }
+}
+
+?>
+
+<html>
+<head>
+<title>Circle- Bee Test</title>
+</head>
+<body>
+    <?php                                               
+        $game = new circle_game();
+        if(isset($_GET['play']) && $_GET['play']) {
+            echo $game->start();
+        } else if(isset($_GET['hit']) && $_GET['hit']) {
+            echo $game->hit();
+        } else {
+            echo $game->play();
+        }
+    ?>
+</body>
+</html>
